@@ -1,20 +1,62 @@
 # Reproducible Research: Peer Assessment 1
 
-
 ## Loading and preprocessing the data
-
-
+firstly,download the data file (activity.rar) to the working directory   
+```{r}
+activitydata <- read.csv(unzip("activity.zip"), header = TRUE)
+activitydata$date <- as.Date(activitydata$date, format="%Y-%m-%d")
+tidydata <- na.omit(activitydata)
+```
 
 ## What is mean total number of steps taken per day?
-
-
-
+```{r}
+stepsperday <- aggregate(steps ~ date, data = tidydata, FUN = sum)
+hist(stepsperday$steps, breaks = nrow(stepsperday), xlab = "Steps Per Day",
+     main = "Total Number of Steps Per Day", col = "blue")
+```
+```{r}
+Meandata <- mean(as.numeric(tapply(tidydata$steps, tidydata$date, sum)),na.rm=T)
+Mediandat <- median(as.numeric(tapply(tidydata$steps, tidydata$date, sum)), na.rm = T)
+Meandata
+Mediandat
+```
 ## What is the average daily activity pattern?
-
-
-
+```{r}
+aveinterval <- aggregate(steps ~ interval, data = tidydata, FUN = mean)
+aveinterval
+plot(aveinterval, type="l", main="Number of steps taken per inteval, averaged across all days")
+```
+```{r}
+aveinterval[which.max(aveinterval$steps), "interval"]
+```
 ## Imputing missing values
-
-
+```{r}
+nassum <- sum(is.na(activitydata))
+nassum
+```
+```{r}
+newdataset <- activitydata
+newdataset$steps[is.na(newdataset$steps)] <- Meandata
+totalstepsperday <- aggregate(steps ~ date, data = newdataset, FUN = sum)
+hist(totalstepsperday$steps, breaks = nrow(totalstepsperday), xlab = "Steps Per Day",
+     main = "Total Number of Steps Per Day1", col = "blue")
+```
+```{r}
+totalMeandata <- mean(as.numeric(tapply(newdataset$steps, newdataset$date, sum)),na.rm=T)
+totalMediandat <- median(as.numeric(tapply(newdataset$steps, newdataset$date, sum)), na.rm = T)
+totalMeandata
+totalMediandat
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+Sys.setlocale("LC_TIME", "English")
+newdataset$week <- as.factor(ifelse(weekdays( newdataset$date) %in% c("Saturday","Sunday"), "Weekend", "Weekday")) 
+```
+```{r}
+library(lattice)
+library(plyr)
+newdataweek <- ddply(newdataset,.(interval, week),summarise, meansteps=mean(steps))
+#newdataweek <- aggregate(steps ~ date, data = newdataset, FUN = mean)
+xyplot(meansteps ~ interval |  week, data = newdataweek, layout = c(1, 2), ylab = "number of steps", xlab = "Interval", type = 'l')
+```
